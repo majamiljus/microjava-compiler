@@ -119,7 +119,6 @@ Searches an array for a value and stores the result in a boolean variable.
 
 Creates a transformed array by applying an expression to each element of a source array.
 
-> `enum` and `switch` are not implemented in this version. The `map` operation is implemented instead of `switch`.
 
 ## Main Components
 
