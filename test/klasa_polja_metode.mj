@@ -1,0 +1,29 @@
+// Ocekivano: 7
+program testKlasa
+
+class Kutija
+{
+	int x;
+	{
+		void postavi(int a)
+		{
+			this.x=a;
+		}
+
+		int uzmi()
+		{
+			return this.x;
+		}
+	}
+}
+
+Kutija k;
+
+{
+	void main()
+	{
+		k=new Kutija;
+		k.postavi(7);
+		print(k.uzmi()); print(eol);
+	}
+}

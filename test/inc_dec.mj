@@ -1,0 +1,24 @@
+// Ocekivano: 16 26 7 1 11 2
+program testAritmetika
+
+int a,b,c;
+
+{
+	void main()
+	{
+		a=10;
+		b=3;
+		c=a+b*2;
+		print(c); print(eol);
+		c=(a+b)*2;
+		print(c); print(eol);
+		c=-b+a;
+		print(c); print(eol);
+		c=a%b;
+		print(c); print(eol);
+		a++;
+		b--;
+		print(a); print(eol);
+		print(b); print(eol);
+	}
+}

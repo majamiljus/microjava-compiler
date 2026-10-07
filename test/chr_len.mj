@@ -1,0 +1,17 @@
+// Ocekivano: 65 B 3
+program testBuiltin
+
+char niz[];
+
+{
+	void main()
+	{
+		niz=new char[3];
+		niz[0]='A';
+		niz[1]='B';
+		niz[2]='C';
+		print(ord(niz[0])); print(eol);
+		print(chr(66)); print(eol);
+		print(len(niz)); print(eol);
+	}
+}

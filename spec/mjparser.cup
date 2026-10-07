@@ -1,0 +1,649 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+
+import org.apache.log4j.*;
+
+import rs.ac.bg.etf.pp1.ast.*;
+
+parser code {:
+
+    boolean errorDetected = false;
+
+    int syntaxErrorLine = -1;
+
+    Logger log = Logger.getLogger(getClass());
+
+    protected int error_sync_size() {
+
+        return 2;
+
+    }
+
+    public void syntax_error(Symbol cur_token) {
+
+        errorDetected = true;
+
+        if (cur_token != null) {
+
+            syntaxErrorLine = cur_token.left;
+
+        } else {
+
+            syntaxErrorLine = -1;
+
+        }
+
+    }
+
+    public void report_recovery_error(String message) {
+
+        errorDetected = true;
+
+        if (syntaxErrorLine != -1) {
+
+            log.error(message + " na liniji " + syntaxErrorLine);
+
+        } else {
+
+            log.error(message);
+
+        }
+
+        syntaxErrorLine = -1;
+
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+
+	    errorDetected = true;
+
+	    if (syntaxErrorLine != -1) {
+
+	        log.error("Fatalna greska, parsiranje se ne moze nastaviti nakon sintaksne greske na liniji " + syntaxErrorLine);
+
+	    } else if (cur_token != null) {
+
+	        log.error("Fatalna greska, parsiranje se ne moze nastaviti na liniji " + cur_token.left);
+
+	    } else {
+
+	        log.error("Fatalna greska, parsiranje se ne moze nastaviti.");
+
+	    }
+
+	}
+
+    public void report_error(String message, Object info) {
+
+        errorDetected = true;
+
+        StringBuilder msg = new StringBuilder(message);
+
+        if (info instanceof Symbol) {
+
+            msg.append(" na liniji ").append(((Symbol) info).left);
+
+        }
+
+        log.error(msg.toString());
+
+    }
+
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+
+        errorDetected = true;
+
+        report_error(message, info);
+
+        done_parsing();
+
+    }
+
+    public void report_info(String message, Object info) {
+
+        StringBuilder msg = new StringBuilder(message);
+
+        if (info instanceof Symbol) {
+
+            msg.append(" na liniji ").append(((Symbol) info).left);
+
+        }
+
+        log.info(msg.toString());
+
+    }
+
+:}
+
+scan with {:
+
+	Symbol s = this.getScanner().next_token();
+
+	if (s != null && s.value != null) 
+
+		log.info(s.toString() + " " + s.value.toString());
+
+	return s;
+
+:}
+
+
+terminal PROG, BREAK, CLASS, ABSTRACT, ELSE, CONST, IF, NEW,
+
+         PRINT, READ, RETURN, VOID, EXTENDS, CONTINUE, FOR, LENGTH,
+
+         FINDANY, MAP, DO, WHILE, IN, RANGE;
+
+terminal INC, DEC, PLUS, MINUS, MUL, DIV, MOD,
+
+         EQ, NEQ, GE, GT, LE, LT,
+
+         AND, OR, ASSIGN, ARROW;
+
+
+terminal SEMI, COLON, COMMA, DOT, QUESTION,
+
+         LPAREN, RPAREN, LBRACKET, RBRACKET, LBRACE, RBRACE;
+
+
+terminal Integer NUMBER;
+
+terminal Integer BOOL;
+
+terminal Character CHAR;
+
+terminal String IDENT;
+
+
+nonterminal Program, DeclarationTypeList, MethodDeclList, DeclarationType, ConstDecl, VarDecl, ClassDecl,
+
+ AbstractClassDecl, AssignLiteralsList, AssignLiterals, Brackets, IdentBracketsList,
+
+ IdentBrackets, ExtendsType, VarDeclList, MethodDeclListOptional, ForRangeStart,
+
+ MethodDeclType, MethodDeclTypeList, MethodDeclTypeOptional, MethodDecl, AbstractMethodDecl,
+
+ FormParsOptional, StatementList, FormPars, FormParsList, Statement, DesignatorStatement,
+
+ ExprOptional, CommaNumberOptional, DesignatorStatementOptional, ConditionOptional,
+
+ OperationOne, ActParsOptional, ActPars, ActParsList,
+
+ Assignop, Relop, ElseOptional, ExprBracketOptional, ExprBracket,
+
+ ActParsBracketsOpt, Addop, Mulop, 
+
+ DesignatorSelector, DesignatorSuffix, GlobalVarRecoverySemi, GlobalVarRecoveryComma,
+
+ ClassExtendsRecovery, ClassFieldRecoverySemi, ClassFieldRecoveryLBrace, FormParsRecovery,
+
+ IfConditionRecovery, AssignmentRecovery, IfStart, ElseStart, ForConditionStart, ForUpdateStart, ForBodyStart,
+
+ AndStart, OrStart, CallStart, AssignStart, MapStart, FindAnyStart, DoStart, ConditionStart;
+
+
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgramName, MethodName, AbstractMethodName, ClassName, AbstractClassName, Designator;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, TypeOrVoid, LiteralConst,
+
+ Condition, CondTermList, CondTerm, CondFactList, CondFact, RelopExpr, Expr, ExprCondition,
+
+ ExprMinus, AddopTermList, Term, MulopFactorList, Factor;
+
+
+precedence left ELSE;
+
+
+//Program---------------------
+
+Program ::= 			(Program) PROG ProgramName DeclarationTypeList LBRACE MethodDeclList RBRACE;
+
+ProgramName ::= 		(ProgramName) IDENT:progName;
+
+DeclarationTypeList ::= (DeclarationTypeListMultiple) DeclarationTypeList DeclarationType | 
+
+						(DeclarationTypeListEmpty) /* epsilon */;
+
+MethodDeclList ::= 		(MethodDeclListMultiple) MethodDeclList MethodDecl |
+
+				   		(MethodDeclListEmpty) /* epsilon */;
+
+
+DeclarationType ::= 	(DeclarationTypeConst) ConstDecl | 
+
+						(DeclarationTypeVar) VarDecl |
+
+						(DeclarationTypeClass) ClassDecl |
+
+						(DeclarationTypeAbstractClass) AbstractClassDecl |
+
+						(DeclarationTypeGlobalVarErrorSemi) Type GlobalVarRecoverySemi |
+
+						(DeclarationTypeGlobalVarErrorComma) Type GlobalVarRecoveryComma IDENT Brackets IdentBracketsList SEMI;
+
+GlobalVarRecoverySemi ::= (GlobalVarRecoverySemi) error SEMI
+
+						{: parser.report_recovery_error("Sintaksna greska u definiciji globalne promenljive"); :};
+
+GlobalVarRecoveryComma ::= (GlobalVarRecoveryComma) error COMMA
+
+						{: parser.report_recovery_error("Sintaksna greska u definiciji globalne promenljive"); :};
+
+
+//ConstDecl-------------------
+
+ConstDecl ::= (ConstDecl) CONST Type IDENT:constName ASSIGN LiteralConst AssignLiteralsList SEMI;
+
+LiteralConst ::= (LiteralConstNum) NUMBER:numValue |
+
+				 (LiteralConstChar) CHAR:charValue |
+
+				 (LiteralConstBool) BOOL:boolValue;
+
+AssignLiteralsList ::= (AssignLiteralsListMultiple) AssignLiteralsList AssignLiterals |
+
+					   (AssignLiteralsEmpty) /* epsilon */;
+
+AssignLiterals ::= (AssignLiteralsItem) COMMA IDENT:constName ASSIGN LiteralConst;
+
+
+//VarDecl--------------------
+
+VarDecl ::= (VarDecl) Type IDENT:varName Brackets IdentBracketsList SEMI;
+
+Brackets ::= (BracketsOne) LBRACKET RBRACKET |
+
+			 (BracketsEmpty) /* epsilon */;
+
+IdentBracketsList ::= (IdentBracketsListMultiple) IdentBracketsList IdentBrackets |
+
+					  (IdentBracketsListEmpty) /* epsilon */;
+
+IdentBrackets ::= (IdentBrackets) COMMA IDENT:varName Brackets;
+
+
+//ClassDecl-------------------
+
+ClassDecl ::= (ClassDeclValid) CLASS ClassName ExtendsType LBRACE VarDeclList MethodDeclListOptional RBRACE |
+
+			  (ClassDeclExtendsError) CLASS ClassName ClassExtendsRecovery VarDeclList MethodDeclListOptional RBRACE |
+
+			  (ClassDeclFieldErrorSemi) CLASS ClassName ExtendsType LBRACE VarDeclList ClassFieldRecoverySemi VarDeclList MethodDeclListOptional RBRACE |
+
+			  (ClassDeclFieldErrorLBrace) CLASS ClassName ExtendsType LBRACE VarDeclList ClassFieldRecoveryLBrace MethodDeclList RBRACE RBRACE;
+
+ClassName ::= (ClassName) IDENT:className;
+
+ClassExtendsRecovery ::= (ClassExtendsRecovery) EXTENDS error LBRACE
+
+						{: parser.report_recovery_error("Sintaksna greska u deklaraciji prosirenja natklase"); :};
+
+ClassFieldRecoverySemi ::= (ClassFieldRecoverySemi) error SEMI
+
+						{: parser.report_recovery_error("Sintaksna greska u deklaraciji polja klase"); :};
+
+ClassFieldRecoveryLBrace ::= (ClassFieldRecoveryLBrace) error LBRACE
+
+						{: parser.report_recovery_error("Sintaksna greska u deklaraciji polja klase"); :};
+
+ExtendsType ::= (ExtendsTypeOne) EXTENDS Type |
+
+				(ExtendsTypeEmpty) /* epsilon */;
+
+VarDeclList ::= (VarDeclListMultiple) VarDeclList VarDecl |
+
+				(VarDeclEmpty) /* epsilon */;
+
+MethodDeclListOptional ::= (MethodDeclListOptionalOne) LBRACE MethodDeclList RBRACE |
+
+						   (MethodDeclListOptionalEmpty) /* epsilon */;
+
+
+//AbstractClassDecl------------
+
+AbstractClassDecl ::= (AbstractClassDeclValid) ABSTRACT CLASS AbstractClassName ExtendsType LBRACE VarDeclList MethodDeclTypeOptional RBRACE |
+
+					  (AbstractClassDeclExtendsError) ABSTRACT CLASS AbstractClassName ClassExtendsRecovery VarDeclList MethodDeclTypeOptional RBRACE |
+
+					  (AbstractClassDeclFieldErrorSemi) ABSTRACT CLASS AbstractClassName ExtendsType LBRACE VarDeclList ClassFieldRecoverySemi VarDeclList MethodDeclTypeOptional RBRACE |
+
+					  (AbstractClassDeclFieldErrorLBrace) ABSTRACT CLASS AbstractClassName ExtendsType LBRACE VarDeclList ClassFieldRecoveryLBrace MethodDeclTypeList RBRACE RBRACE;
+
+AbstractClassName ::= (AbstractClassName) IDENT:className;
+
+MethodDeclType ::= (MethodDeclTypeBasic) MethodDecl |
+
+				   (MethodDeclTypeAbstract) AbstractMethodDecl SEMI;
+
+MethodDeclTypeList ::= (MethodDeclTypeListMultiple) MethodDeclTypeList MethodDeclType |
+
+					   (MethodDeclTypeListEmpty) /* epsilon */;
+
+MethodDeclTypeOptional ::= (MethodDeclTypeOptionalOne) LBRACE MethodDeclTypeList RBRACE |
+
+						   (MethodDeclTypeOptionalEmpty) /* epsilon */;
+
+
+//AbstractMethodDecl----------
+
+AbstractMethodDecl ::= (AbstractMethodDecl) ABSTRACT AbstractMethodName LPAREN FormParsOptional RPAREN;
+
+AbstractMethodName ::= (AbstractMethodName) TypeOrVoid IDENT:methodName;
+
+TypeOrVoid ::= (TypeOrVoidType) Type |
+
+			   (TypeOrVoidVoid) VOID;
+
+FormParsOptional ::= (FormParsOptionalOne) FormPars |
+
+					 (FormParsOptionalEmpty) /* epsilon */;
+
+
+//MethodDecl--------------------
+
+MethodDecl ::= (MethodDecl) MethodName LPAREN FormParsOptional RPAREN VarDeclList LBRACE StatementList RBRACE;
+
+MethodName ::= (MethodTypeName) Type IDENT:methodName |
+
+			   (MethodVoidName) VOID IDENT:methodName;
+
+StatementList ::= (StatementListMultiple) StatementList Statement | 
+
+				  (StatementListEmpty) /* epsilon */;
+
+
+//FormPars----------------------
+
+FormPars ::= (FormParsValid) Type IDENT:paramName Brackets FormParsList |
+
+			 (FormParsError) FormParsRecovery FormParsList;
+
+FormParsList ::= (FormParsListMultiple) FormParsList COMMA Type IDENT:paramName Brackets |
+
+				 (FormParsListError) FormParsList COMMA FormParsRecovery |
+
+				 (FormParsListEmpty) /* epsilon */;
+
+FormParsRecovery ::= (FormParsRecovery) error
+
+					{: parser.report_recovery_error("Sintaksna greska u deklaraciji formalnog parametra funkcije"); :};
+
+
+//Type--------------------
+
+Type ::= (Type) IDENT:typeName;
+
+
+//Statement----------------
+
+Statement ::= (StatementDesignator) DesignatorStatement SEMI |
+
+			  (StatementAssignError) Designator Assignop AssignmentRecovery |
+
+			  (StatementIfElse) IF LPAREN Condition RPAREN IfStart Statement ElseOptional |
+
+			  (StatementIfConditionError) IF LPAREN IfConditionRecovery Statement ElseOptional |
+
+			  (StatementBreak) BREAK SEMI |
+			  
+			  (StatementBreakLabel) BREAK IDENT:labelBreak  SEMI |
+
+			  (StatementContinue) CONTINUE SEMI |
+			  
+			  (StatementContinueLabel) IDENT:labelContinue CONTINUE SEMI |
+
+			  (StatementReturn) RETURN ExprOptional SEMI |
+
+			  (StatementRead) READ LPAREN Designator RPAREN SEMI |
+
+			  (StatementPrint) PRINT LPAREN Expr CommaNumberOptional RPAREN SEMI |
+
+			  (StatementFor) FOR LPAREN DesignatorStatementOptional SEMI ForConditionStart ConditionOptional SEMI ForUpdateStart DesignatorStatementOptional RPAREN ForBodyStart Statement |
+
+			  (StatementFindAny) Designator Assignop AssignStart Designator FINDANY LPAREN FindAnyStart Expr RPAREN SEMI |
+
+			  (StatementMap) Designator Assignop AssignStart Designator MAP LPAREN IDENT:iteratorName ARROW MapStart Expr RPAREN SEMI |
+
+			  (StatementListSt) LBRACE StatementList RBRACE |
+			  
+			  (StatementDoWhileLabel)IDENT:label COLON DO DoStart Statement WHILE LPAREN ConditionStart Condition RPAREN SEMI |
+			  
+			  (StatementDoWhile)DO DoStart Statement WHILE LPAREN ConditionStart Condition RPAREN SEMI |
+			  
+			  (StatementForRange) FOR IDENT:index ForRangeStart IN RANGE LPAREN Expr COMMA Expr RPAREN Statement;
+
+
+				  
+ElseOptional ::= (ElseOptionalOne) ELSE ElseStart Statement |
+
+				 (ElseOptionalEmpty) /* epsilon */;
+
+
+ExprOptional ::= (ExprOptionalOne) Expr |
+
+				 (ExprOptionalEmpty) /* epsilon */;
+
+
+CommaNumberOptional ::= (CommaNumberOptionalOne) COMMA NUMBER:printWidth |
+
+						(CommaNumberOptionalEmpty) /* epsilon */;
+
+
+DesignatorStatementOptional ::= (DesignatorStatementOptionalOne) DesignatorStatement |
+
+								(DesignatorStatementOptionalEmpty) /* epsilon */;
+
+
+ConditionOptional ::= (ConditionOptionalOne) Condition |
+
+					  (ConditionOptionalEmpty) /* epsilon */;
+
+
+IfConditionRecovery ::= (IfConditionRecovery) error RPAREN
+
+						{: parser.report_recovery_error("Sintaksna greska u logickom izrazu unutar if konstrukcije"); :};
+
+
+AssignmentRecovery ::= (AssignmentRecovery) error SEMI
+
+					   {: parser.report_recovery_error("Sintaksna greska u konstrukciji iskaza dodele"); :};
+
+
+//DesignatorStatement-----------
+
+DesignatorStatement ::= (DesignatorStatement) Designator OperationOne;
+
+
+OperationOne ::= (OperationOneExpr) Assignop AssignStart Expr |
+
+				 (OperationOneActPars) LPAREN CallStart ActParsOptional RPAREN |
+
+				 (OperationOneInc) INC |
+
+				 (OperationOneDec) DEC;
+
+
+ActParsOptional ::= (ActParsOptionalOne) ActPars |
+
+					(ActParsOptionalEmpty) /* epsilon */;
+
+
+//ActPars-----------------------
+
+ActPars ::= (ActPars) Expr ActParsList;
+
+ActParsList ::= (ActParsListMultiple) ActParsList COMMA Expr |
+
+				(ActParsListEmpty) /* epsilon */;
+
+
+//Condition-----------------------
+
+Condition ::= (Condition) CondTerm CondTermList;
+
+
+CondTermList ::= (CondTermListMultiple) CondTermList OR OrStart CondTerm |
+
+				 (CondTermListEmpty) /* epsilon */;
+
+
+//CondTerm-----------------------
+
+CondTerm ::= (CondTerm) CondFact CondFactList;
+
+
+CondFactList ::= (CondFactListMultiple) CondFactList AND AndStart CondFact |
+
+				 (CondFactListEmpty) /* epsilon */;
+
+
+//CondFact----------------------
+
+CondFact ::= (CondFact) ExprMinus RelopExpr;
+
+RelopExpr ::= (RelopExprOne) Relop ExprMinus |
+
+			  (RelopExprEmpty) /* epsilon */;
+
+
+//Expr--------------------------
+
+Expr ::= (Expr) ExprCondition;
+
+
+ExprCondition ::= (ExprConditionCond) Condition |
+
+				  (ExprConditionExpr) Condition QUESTION Expr COLON ExprCondition;
+
+
+ExprMinus ::= (ExprMinusUnary) MINUS ExprMinus |
+
+			  (ExprMinusTerm) Term AddopTermList;
+
+
+AddopTermList ::= (AddopTermListMultiple) AddopTermList Addop Term |
+
+				  (AddopTermListEmpty) /* epsilon */;
+
+
+//Term----------------------------
+
+Term ::= (Term) Factor MulopFactorList;
+
+
+MulopFactorList ::= (MulopFactorListMultiple) MulopFactorList Mulop Factor |
+
+					(MulopFactorListEmpty) /* epsilon */;
+
+
+//Factor------------------------
+
+Factor ::= (FactorDesignator) Designator ActParsBracketsOpt |
+
+		   (FactorNumber) NUMBER:numValue |
+
+		   (FactorChar) CHAR:charValue |
+
+		   (FactorBool) BOOL:boolValue |
+
+		   (FactorNew) NEW Type ExprBracketOptional |
+
+		   (FactorExpr) LPAREN Expr RPAREN;
+
+
+ActParsBracketsOpt ::= (ActParsBracketsOptOne) LPAREN CallStart ActParsOptional RPAREN |
+
+					   (ActParsBracketsOptEmpty) /* epsilon */;
+
+
+ExprBracket ::= (ExprBracket) LBRACKET Expr RBRACKET;
+
+
+ExprBracketOptional ::= (ExprBracketOptionalOne) ExprBracket |
+
+						(ExprBracketEmpty) /* epsilon */;
+
+
+//Designator--------------------
+
+Designator ::= (Designator) IDENT:designatorName DesignatorSuffix;
+
+
+DesignatorSuffix ::= (DesignatorSuffixMultiple) DesignatorSuffix DesignatorSelector |
+
+					 (DesignatorSuffixEmpty) /* epsilon */;
+
+
+DesignatorSelector ::= (DesignatorSelectorIdent) DOT IDENT:memberName |
+
+					   (DesignatorSelectorLength) DOT LENGTH |
+
+					   (DesignatorSelectorExpr) LBRACKET Expr RBRACKET;
+
+
+//Assignop--------------------------
+
+Assignop ::= (Assignop) ASSIGN;
+
+
+//Relop---------------------------------
+
+Relop ::= (RelopEq) EQ |
+
+		  (RelopNeq) NEQ |
+
+		  (RelopGt) GT |
+
+		  (RelopGe) GE |
+
+		  (RelopLt) LT |
+
+		  (RelopLe) LE;
+
+
+//Addop--------------------------------
+
+Addop ::= (AddopPlus) PLUS |
+
+		  (AddopMinus) MINUS;
+
+
+//Mulop---------------------------
+
+Mulop ::= (MulopMul) MUL |
+
+		  (MulopDiv) DIV |
+
+		  (MulopMod) MOD;
+
+
+//Markeri za generisanje koda----------------
+
+IfStart ::= (IfStart) /* epsilon */;
+
+ElseStart ::= (ElseStart) /* epsilon */;
+
+ForConditionStart ::= (ForConditionStart) /* epsilon */;
+
+ForUpdateStart ::= (ForUpdateStart) /* epsilon */;
+
+ForBodyStart ::= (ForBodyStart) /* epsilon */;
+
+AndStart ::= (AndStart) /* epsilon */;
+
+OrStart ::= (OrStart) /* epsilon */;
+
+CallStart ::= (CallStart) /* epsilon */;
+
+AssignStart ::= (AssignStart) /* epsilon */;
+
+MapStart ::= (MapStart) /* epsilon */;
+
+FindAnyStart ::= (FindAnyStart) /* epsilon */;
+
+DoStart ::= (DoStart) /* epsilon */;
+
+ConditionStart ::= (ConditionStart) /* epsilon */;
+
+ForRangeStart ::= (ForRangeStart) /* epsilon */;

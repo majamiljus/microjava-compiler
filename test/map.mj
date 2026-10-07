@@ -1,0 +1,19 @@
+// Ocekivano: 2 4 6 8
+program testMap
+
+int src[],dst[],i;
+
+{
+	void main()
+	{
+		src=new int[4];
+		src[0]=1;
+		src[1]=2;
+		src[2]=3;
+		src[3]=4;
+		dst=src.map(i => i*2);
+		for(i=0;i<dst.length;i++){
+			print(dst[i]); print(eol);
+		}
+	}
+}

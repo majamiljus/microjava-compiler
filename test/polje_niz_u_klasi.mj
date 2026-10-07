@@ -1,0 +1,22 @@
+// Ocekivano: 20 3
+program testPoljeNiz
+
+class A
+{
+	int niz[];
+}
+
+A a;
+
+{
+	void main()
+	{
+		a=new A;
+		a.niz=new int[3];
+		a.niz[0]=10;
+		a.niz[1]=20;
+		a.niz[2]=30;
+		print(a.niz[1]); print(eol);
+		print(a.niz.length); print(eol);
+	}
+}

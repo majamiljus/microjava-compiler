@@ -1,0 +1,34 @@
+// Ocekivano: 2
+program testPolimorfizam
+
+class A
+{
+	{
+		int vrednost()
+		{
+			return 1;
+		}
+	}
+}
+
+class B extends A
+{
+	{
+		int vrednost()
+		{
+			return 2;
+		}
+	}
+}
+
+A a;
+B b;
+
+{
+	void main()
+	{
+		b=new B;
+		a=b;
+		print(a.vrednost()); print(eol);
+	}
+}

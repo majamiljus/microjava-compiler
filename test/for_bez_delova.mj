@@ -1,0 +1,15 @@
+// Ocekivano: 3
+program testForOpcioni
+
+int i;
+
+{
+	void main()
+	{
+		i=0;
+		for(;i<3;){
+			i++;
+		}
+		print(i); print(eol);
+	}
+}

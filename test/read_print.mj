@@ -1,0 +1,13 @@
+// Unos: 7
+// Ocekivano: 14
+program testRead
+
+int x;
+
+{
+	void main()
+	{
+		read(x);
+		print(x*2); print(eol);
+	}
+}

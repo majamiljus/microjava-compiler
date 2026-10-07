@@ -1,0 +1,31 @@
+// Ocekivano: 1 0 1 1
+program testFindAny
+
+int niz[];
+char slova[];
+bool logicki[];
+bool rezultat;
+
+{
+	void main()
+	{
+		niz=new int[3];
+		niz[0]=2;
+		niz[1]=4;
+		niz[2]=6;
+		rezultat=niz.findAny(4);
+		print(rezultat); print(eol);
+		rezultat=niz.findAny(5);
+		print(rezultat); print(eol);
+		slova=new char[2];
+		slova[0]='a';
+		slova[1]='b';
+		rezultat=slova.findAny('b');
+		print(rezultat); print(eol);
+		logicki=new bool[2];
+		logicki[0]=false;
+		logicki[1]=true;
+		rezultat=logicki.findAny(true);
+		print(rezultat); print(eol);
+	}
+}

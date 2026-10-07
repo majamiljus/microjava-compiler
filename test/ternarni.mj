@@ -1,0 +1,18 @@
+// Ocekivano: 10 20 + b
+program testTernarni
+
+int a;
+bool b;
+
+{
+	void main()
+	{
+		a=5;
+		b=true;
+		print(b ? 10 : 20); print(eol);
+		b=false;
+		print(b ? 10 : 20); print(eol);
+		print(a>3 ? '+' : '-'); print(eol);
+		print(a==5 ? 'b' : 'x'); print(eol);
+	}
+}

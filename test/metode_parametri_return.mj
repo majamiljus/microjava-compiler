@@ -1,0 +1,20 @@
+// Ocekivano: 12 9
+program testMetode
+
+{
+	int saberi(int a,int b)
+	{
+		return a+b;
+	}
+
+	int duplo(int x)
+	{
+		return saberi(x,x);
+	}
+
+	void main()
+	{
+		print(saberi(5,7)); print(eol);
+		print(duplo(4)+1); print(eol);
+	}
+}

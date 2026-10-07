@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="MJCompilerMaja" default="compile" basedir=".">
+
+	<property name="src.dir" value="src"/>
+	<property name="package.dir" value="${src.dir}/rs/ac/bg/etf/pp1"/>
+	<property name="ast.dir" value="${package.dir}/ast"/>
+	<property name="test.dir" value="test"/>
+	<property name="test.package.dir" value="${test.dir}/rs/ac/bg/etf/pp1"/>
+	<property name="spec.dir" value="spec"/>
+	<property name="lib.dir" value="lib"/>
+	<property name="bin.dir" value="bin"/>
+	<property name="config.dir" value="config"/>
+
+	<property name="source.file" value="${test.dir}/mod_forRange.mj"/>
+	<property name="obj.file" value="${test.dir}/mod_forRange.obj"/>
+
+	<path id="project.classpath">
+		<pathelement location="${lib.dir}/JFlex.jar"/>
+		<pathelement location="${lib.dir}/cup_v10k.jar"/>
+		<pathelement location="${lib.dir}/log4j-1.2.17.jar"/>
+		<pathelement location="${lib.dir}/symboltable-1-1.jar"/>
+		<pathelement location="${lib.dir}/mj-runtime-1.1.jar"/>
+	</path>
+
+	<path id="runtime.classpath">
+		<pathelement location="${bin.dir}"/>
+		<pathelement location="${config.dir}"/>
+		<path refid="project.classpath"/>
+	</path>
+
+	<target name="delete">
+		<delete file="${package.dir}/MJParser.java" quiet="true"/>
+		<delete file="${package.dir}/sym.java" quiet="true"/>
+		<delete dir="${ast.dir}" quiet="true"/>
+		<delete file="${spec.dir}/mjparser_astbuild.cup" quiet="true"/>
+	</target>
+
+	<target name="deleteLexer">
+		<delete file="${package.dir}/Yylex.java" quiet="true"/>
+		<delete file="${package.dir}/Yylex.java~" quiet="true"/>
+	</target>
+
+	<target name="deleteBin">
+		<delete dir="${bin.dir}" quiet="true"/>
+	</target>
+
+	<target name="clean" depends="delete,deleteLexer,deleteBin"/>
+
+	<target name="lexerGen" depends="deleteLexer">
+		<mkdir dir="${package.dir}"/>
+		<java jar="${lib.dir}/JFlex.jar" fork="true" failonerror="true">
+			<arg value="-d"/>
+			<arg value="${package.dir}"/>
+			<arg value="${spec.dir}/mjlexer.flex"/>
+		</java>
+	</target>
+
+	<target name="parserGen" depends="delete">
+		<mkdir dir="${package.dir}"/>
+		<java jar="${lib.dir}/cup_v10k.jar" fork="true" failonerror="true">
+			<arg value="-destdir"/>
+			<arg value="${package.dir}"/>
+			<arg value="-ast"/>
+			<arg value="src.rs.ac.bg.etf.pp1.ast"/>
+			<arg value="-parser"/>
+			<arg value="MJParser"/>
+			<arg value="-dump_states"/>
+			<arg value="-buildtree"/>
+			<arg value="${spec.dir}/mjparser.cup"/>
+		</java>
+	</target>
+
+	<target name="repackage" depends="lexerGen,parserGen">
+		<replace dir="${src.dir}"
+				 includes="**/*.java"
+				 token="src.rs.ac.bg.etf.pp1.ast"
+				 value="rs.ac.bg.etf.pp1.ast"
+				 summary="true"/>
+	</target>
+
+	<target name="compile" depends="repackage,deleteBin">
+		<mkdir dir="${bin.dir}"/>
+		<javac destdir="${bin.dir}"
+			   source="1.8"
+			   target="1.8"
+			   encoding="UTF-8"
+			   debug="true"
+			   includeantruntime="false">
+			<src path="${src.dir}"/>
+			<src path="${test.dir}"/>
+			<classpath refid="project.classpath"/>
+		</javac>
+
+		<copy todir="${bin.dir}" failonerror="false">
+			<fileset dir="${config.dir}" erroronmissingdir="false"/>
+		</copy>
+	</target>
+
+	<target name="compileProgram" depends="compile">
+		<delete file="${obj.file}" quiet="true"/>
+
+		<java classname="rs.ac.bg.etf.pp1.Compiler"
+			  fork="true"
+			  failonerror="true">
+			<arg file="${source.file}"/>
+			<arg file="${obj.file}"/>
+			<classpath refid="runtime.classpath"/>
+		</java>
+
+		<available file="${obj.file}" property="obj.generated"/>
+
+		<fail unless="obj.generated"
+			  message="Obj fajl nije generisan. Pogledaj greške kompajlera iznad."/>
+	</target>
+
+	<target name="disasm" depends="compileProgram">
+		<java classname="rs.etf.pp1.mj.runtime.disasm"
+			  fork="true"
+			  failonerror="true">
+			<arg file="${obj.file}"/>
+			<classpath>
+				<pathelement location="${lib.dir}/mj-runtime-1.1.jar"/>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="runObj" depends="disasm">
+		<java classname="rs.etf.pp1.mj.runtime.Run"
+			  fork="true"
+			  failonerror="true">
+			<arg file="${obj.file}"/>
+			<classpath>
+				<pathelement location="${lib.dir}/mj-runtime-1.1.jar"/>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="debug" depends="disasm">
+		<java classname="rs.etf.pp1.mj.runtime.Run"
+			  fork="true"
+			  failonerror="true">
+			<arg file="${obj.file}"/>
+			<arg value="-debug"/>
+			<classpath>
+				<pathelement location="${lib.dir}/mj-runtime-1.1.jar"/>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="disasmTerminal" depends="compileProgram">
+		<exec executable="cmd.exe"
+			  osfamily="windows"
+			  dir="${basedir}"
+			  spawn="true">
+			<arg value="/c"/>
+			<arg value="start"/>
+			<arg value="MicroJava Disasm"/>
+			<arg value="cmd.exe"/>
+			<arg value="/k"/>
+			<arg value="java"/>
+			<arg value="-cp"/>
+			<arg value="${basedir}\${lib.dir}\mj-runtime-1.1.jar"/>
+			<arg value="rs.etf.pp1.mj.runtime.disasm"/>
+			<arg value="${basedir}\${obj.file}"/>
+		</exec>
+	</target>
+
+	<target name="runTerminal" depends="compileProgram">
+		<exec executable="cmd.exe"
+			  osfamily="windows"
+			  dir="${basedir}"
+			  spawn="true">
+			<arg value="/c"/>
+			<arg value="start"/>
+			<arg value="MicroJava Run"/>
+			<arg value="cmd.exe"/>
+			<arg value="/k"/>
+			<arg value="java"/>
+			<arg value="-cp"/>
+			<arg value="${basedir}\${lib.dir}\mj-runtime-1.1.jar"/>
+			<arg value="rs.etf.pp1.mj.runtime.Run"/>
+			<arg value="${basedir}\${obj.file}"/>
+		</exec>
+	</target>
+
+	<target name="debugTerminal" depends="compileProgram">
+		<exec executable="cmd.exe"
+			  osfamily="windows"
+			  dir="${basedir}"
+			  spawn="true">
+			<arg value="/c"/>
+			<arg value="start"/>
+			<arg value="MicroJava Debug"/>
+			<arg value="cmd.exe"/>
+			<arg value="/k"/>
+			<arg value="java"/>
+			<arg value="-cp"/>
+			<arg value="${basedir}\${lib.dir}\mj-runtime-1.1.jar"/>
+			<arg value="rs.etf.pp1.mj.runtime.Run"/>
+			<arg value="${basedir}\${obj.file}"/>
+			<arg value="-debug"/>
+		</exec>
+	</target>
+
+</project>

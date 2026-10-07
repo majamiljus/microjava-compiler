@@ -1,0 +1,18 @@
+// Ocekivano: A C
+// X NE SME da se ispise.
+program testShortCircuit
+
+{
+	bool proveri()
+	{
+		print('X');
+		return true;
+	}
+
+	void main()
+	{
+		if(true || proveri()) print('A');
+		if(false && proveri()) print('B'); else print('C');
+		print(eol);
+	}
+}

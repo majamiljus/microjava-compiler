@@ -1,0 +1,31 @@
+// Ocekivano: 9
+program testApstraktna
+
+abstract class A
+{
+	{
+		abstract int vrednost();
+	}
+}
+
+class B extends A
+{
+	{
+		int vrednost()
+		{
+			return 9;
+		}
+	}
+}
+
+A a;
+B b;
+
+{
+	void main()
+	{
+		b=new B;
+		a=b;
+		print(a.vrednost()); print(eol);
+	}
+}

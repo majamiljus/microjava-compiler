@@ -1,0 +1,21 @@
+// Ocekivano: 5
+program testNizObjekata
+
+class A
+{
+	int x;
+}
+
+A niz[];
+A a;
+
+{
+	void main()
+	{
+		niz=new A[2];
+		a=new A;
+		a.x=5;
+		niz[0]=a;
+		print(niz[0].x); print(eol);
+	}
+}

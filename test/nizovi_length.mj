@@ -1,0 +1,19 @@
+// Ocekivano: 10 20 30 3 10
+program testNizovi
+
+int niz[];
+
+{
+	void main()
+	{
+		niz=new int[3];
+		niz[0]=10;
+		niz[1]=20;
+		niz[2]=30;
+		print(niz[0]); print(eol);
+		print(niz[1]); print(eol);
+		print(niz[2]); print(eol);
+		print(niz.length); print(eol);
+		print(niz[niz.length-3]); print(eol);
+	}
+}
